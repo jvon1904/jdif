@@ -105,8 +105,8 @@ function test_unknown_arg () {
   fi
 }
 
-test_help
 test_no_input
+test_help
 test_example_stdin
 test_example_f_arg
 test_no_file_f_arg

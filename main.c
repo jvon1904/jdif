@@ -1,4 +1,5 @@
 #include "utils.h"
+#include "json.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -33,18 +34,50 @@ int checkArgs(int argc, char *argv[], int *fopt, FILE **fptr) {
   return 0;
 }
 
-void getLines(int *fopt, FILE *fptr, Document *doc) {
+void getBody(int *fopt, FILE *fptr, Document *doc) {
   int c; // Parsed input character
-  Line line;
-  initLine(&line);
 
   while ((c = (*fopt ? fgetc(fptr) : getchar())) != EOF) {
-    if (c == CR) {
-      appendDocumentLine(doc, cloneLine(&line));
-      freeLine(&line);
-      initLine(&line);
+    appendString(doc->body, c);
+  }
+}
+
+void getLines(Document *doc) {
+  String line;
+  initString(&line);
+
+  int go = 1;
+  
+  for (int i = 0; i < doc->body->len; i++) {
+    char c = doc->body->text[i];
+    char next = doc->body->text[i + 1];
+    char nextnext;
+    if (i + 2 < doc->body->len) {
+      nextnext = doc->body->text[i + 2];
     } else {
-      appendLine(&line, c);
+      nextnext = '\0';
+    }
+
+    if (c == '\\' && next == CR && nextnext == SP) {
+      go = 0;
+    } else if (c == CR && next == SP) {
+      go = 0;
+    }
+
+
+    if (go) {
+      if (c == CR) {
+        appendDocumentLine(doc, cloneString(&line));
+        freeString(&line);
+        initString(&line);
+      } else {
+        appendString(&line, c);
+      }
+    } else {
+      if (c != '\\' && c != CR && c != SP) {
+        appendString(&line, c);
+        go = 1;
+      }
     }
   }
 }
@@ -52,7 +85,7 @@ void getLines(int *fopt, FILE *fptr, Document *doc) {
 void filterLines(Document *doc, char filtered) {
   for (int i = 0; i < doc->llen; i++) {
     if (doc->lines[i]->text[0] == filtered) {
-      freeLine(doc->lines[i]);
+      freeString(doc->lines[i]);
 
       for (int j = i; j < doc->llen; j++) {
         doc->lines[j] = doc->lines[j + 1];
@@ -65,15 +98,11 @@ void filterLines(Document *doc, char filtered) {
   }
 }
 
-void formatLines(Document, *doc) {
-  Key key;
-  Value value;
-  for (int i = 0; i < doc->llen; i++) {
-    appendKey(&key, '"');
-    for (int j = 0; j < doc->lines[i]->len; j++) {
-
+void formatEntries(Document *doc) {
+  for (int i = 0; i < doc->elen; i++) {
+    for (int j = 0; j < doc->entries[i]->len; j++) {
+      formatLineAsJson(doc->entries[i]->lines[j]);
     }
-    appendKey(&key, '",');
   }
 }
 
@@ -88,6 +117,11 @@ void getEntries(Document *doc) {
     } else {
       appendEntry(&entry, doc->lines[i]);
     }
+  }
+  
+  if (entry.len > 0) {
+    appendDocumentEntry(doc, cloneEntry(&entry));
+    freeEntry(&entry);
   }
 }
 
@@ -112,7 +146,13 @@ void printJSON(Document *doc) {
   for (int i = 0; i < doc->elen; i++) {
     printf(IDNT2 "{\n");
     for (int j = 0; j < doc->entries[i]->len; j++) {
-      printf(IDNT4 "%s\n", doc->entries[i]->lines[j]->text);
+      char *closing;
+      if (j == doc->entries[i]->len - 1) {
+        closing = "\n";
+      } else {
+        closing = ",\n";
+      }
+      printf(IDNT4 "\"%s\": \"%s\"%s", doc->entries[i]->lines[j]->key, doc->entries[i]->lines[j]->val, closing );
     }
     char *closing;
     if (i == doc->elen - 1) {
@@ -136,11 +176,12 @@ int main(int argc, char *argv[]) {
     return 0;
   }
 
-  getLines(&fopt, fptr, &doc); // Gather input data by lines
+  getBody(&fopt, fptr, &doc); // Gather input data by lines
+  getLines(&doc); // Gather input data by lines
   filterLines(&doc, '#'); // Remove all comment lines that start with # character
-  formatLines(&doc); // Format each line into valid JSON
   getEntries(&doc); // Gather lines separated by NLs into entries
   squashEntries(&doc); // Remove all empty entries
+  formatEntries(&doc); // Format each line into valid JSON
   printJSON(&doc); // Output formatted JSON
   return 0;
 }
