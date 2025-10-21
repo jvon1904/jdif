@@ -1,86 +1,11 @@
+#include "utils.h"
+#include "json.h"
 #include <stdio.h>
+#include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
-#include <regex.h>
 
-#define INITIAL_CAP 32
-
-typedef struct {
-  size_t len;
-  size_t cap;
-  char *data;
-} String;
-
-void appendString(String *str, char c) {
-  if (str->cap <= str->len + 1) {
-    str->cap *= 2;
-    str->data = realloc(str->data, str->cap);
-  }
-  str->data[str->len++] = c;
-  str->data[str->len] = '\0';
-}
-
-void initString(String *str) {
-  str->data = malloc(INITIAL_CAP);
-  str->data[0] = '\0';
-  str->len = 0;
-  str->cap = INITIAL_CAP;
-}
-
-void freeString(String *str) {
-  free(str->data);
-}
-
-void appendValue(String *json, String *val) {
-  int is_int = 1;
-  for (int i = 0; i < strlen(val->data); i++) {
-    if (!(val->data[i] == '.' || 
-        val->data[i] == '0' ||
-        val->data[i] == '1' ||
-        val->data[i] == '2' ||
-        val->data[i] == '3' ||
-        val->data[i] == '4' ||
-        val->data[i] == '5' ||
-        val->data[i] == '6' ||
-        val->data[i] == '7' ||
-        val->data[i] == '8' ||
-        val->data[i] == '9')) {
-          is_int = 0; 
-        }
-  }
-
-  if (!is_int) {
-    appendString(json, '"');
-  }
-
-  for (int i = 0; i < strlen(val->data); i++) {
-    appendString(json, val->data[i]);
-  }
-
-  if (!is_int) {
-    appendString(json, '"');
-  }
-}
-
-int main(int argc, char *argv[]) {
-  // Initialize variables
-  FILE *fptr;
-  int c;
-  String json;
-  String val;
-  initString(&json);
-  initString(&val);
-
-  // Flags
-  int fopt = 0;   // file option
-  int nval = 0;   // new value started
-  int skip = 0;   // skip next character
-  int eof  = 0;   // end of file
-  int nwln = 0;   // newline
-  int cmt  = 0;   // comment started
-  int cmnd = 0;   // comment ended
-
-  // Check for command options
+int checkArgs(int argc, char *argv[], int *fopt, FILE **fptr) {
   if (argc > 1) {
     // --help
     if (!strcmp(argv[1], "--help")) {
@@ -94,12 +19,12 @@ int main(int argc, char *argv[]) {
         printf("Please specify a file path with `jdif -f /path/to/file`\n");
         return 1;
       } else {
-        fptr = fopen(argv[2], "r");
+        *fptr = fopen(argv[2], "r");
         if (fptr == NULL) {
           printf("Could not open file: %s\n", argv[2]);
           return 1;
         }
-        fopt = 1;
+        *fopt = 1;
       }
     // Unsupported
     } else {
@@ -107,81 +32,182 @@ int main(int argc, char *argv[]) {
       return 1;
     }
   }
+  return 0;
+}
 
-  if (!fopt && (fseek(stdin, 0, SEEK_END) == 0)) {
+void getBody(int *fopt, FILE *fptr, Document *doc) {
+  int c; // Parsed input character
+
+  while ((c = (*fopt ? fgetc(fptr) : getchar())) != EOF) {
+    appendString(doc->body, c);
+  }
+}
+
+void getLines(Document *doc) {
+  Line line;
+  initLine(&line);
+
+  int go = 1;
+  
+  for (int i = 0; i < doc->body->len; i++) {
+    char c = doc->body->text[i];
+    char next = doc->body->text[i + 1];
+    char nextnext;
+    if (i + 2 < doc->body->len) {
+      nextnext = doc->body->text[i + 2];
+    } else {
+      nextnext = '\0';
+    }
+
+    if (c == '\\' && next == CR && nextnext == SP) {
+      go = 0;
+    } else if (c == CR && next == SP) {
+      go = 0;
+    }
+
+
+    if (go) {
+      if (c == CR) {
+        appendDocumentLine(doc, cloneLine(&line));
+        freeLine(&line);
+        initLine(&line);
+      } else {
+        appendLine(&line, c);
+      }
+    } else {
+      if (c != '\\' && c != CR && c != SP) {
+        appendLine(&line, c);
+        go = 1;
+      }
+    }
+  }
+
+  if (line.len > 0) {
+    appendDocumentLine(doc, cloneLine(&line));
+    freeLine(&line);
+  } else {
+    freeLine(&line);
+  }
+}
+
+void filterLines(Document *doc, char filtered) {
+  for (int i = 0; i < doc->llen; i++) {
+    if (doc->lines[i]->text[0] == filtered) {
+      freeLine(doc->lines[i]);
+
+      for (int j = i; j < doc->llen; j++) {
+        doc->lines[j] = doc->lines[j + 1];
+      }
+
+      doc->llen--;
+      doc->lines[doc->llen] = NULL;
+      i--;
+    }
+  }
+}
+
+void getEntries(Document *doc) {
+  Entry entry;
+  initEntry(&entry);
+  for (int i = 0; i < doc->llen; i++) {
+    if (doc->lines[i]->len == 0) {
+      appendDocumentEntry(doc, cloneEntry(&entry));
+      freeEntry(&entry);
+      initEntry(&entry);
+    } else {
+      formatLineAsJson(doc->lines[i]);
+      appendEntry(&entry, doc->lines[i]);
+    }
+  }
+  
+  if (entry.len > 0) {
+    appendDocumentEntry(doc, cloneEntry(&entry));
+    freeEntry(&entry);
+  }
+}
+
+void squashEntries(Document *doc) {
+  for (int i = 0; i < doc->elen; i++) {
+    if (doc->entries[i]->len == 0) {
+      freeEntry(doc->entries[i]);
+
+      for (int j = i; j < doc->elen; j++) {
+        doc->entries[j] = doc->entries[j + 1];
+      }
+
+      doc->elen--;
+      doc->entries[doc->elen] = NULL;
+      i--;
+    }
+  }
+}
+
+void consolidateEntryLineVals(Document *doc) {
+  // Iterate over each entry
+  for (int i = 0; i < doc->elen; i++) {
+
+    Entry *ent = doc->entries[i];
+
+    // Iterate over each line in entry
+    for (int j = 0; j < ent->len; j++) {
+
+      // Consolidate identical values
+      //
+      // Iterate over each subsequent key
+      for (int k = j + 1; k < ent->len; k++) {
+        if (ent->lines[k]) {
+          // Compare keys
+          //
+          // If match, append value and remove duplicate line
+          if (!strcmp(ent->lines[k]->key->text, ent->lines[j]->key->text)) {
+            if (ent->lines[k]->vlen > 0) {
+              appendVal(ent->lines[j], ent->lines[k]->vals[0]);
+            }
+
+            // Remove duplicate line
+            freeLine(ent->lines[k]);
+            free(ent->lines[k]);
+
+            // Decrement length
+            ent->len--;
+
+            // Shift remaining lines left
+            for (int x = k; x < ent->len; x++) {
+              ent->lines[x] = ent->lines[x + 1];
+            }
+
+            k--;
+          }
+        } else {
+          continue;
+        }
+      }
+    }
+  }
+}
+
+int main(int argc, char *argv[]) {
+  int fopt = 0; // File option
+  FILE *fptr = NULL; // Optional file
+  Document doc;
+  initDocument(&doc);
+
+  // Check for command options
+  if (checkArgs(argc, argv, &fopt, &fptr)) {
     return 0;
   }
 
-  // Add the first two characters
-  appendString(&json, '{');
-  appendString(&json, '"');
-
-  // Stream characters from STDIN or file
-  while ((c = fopt ? fgetc(fptr) : getchar()) && !eof) {
-    if (c == '#') {
-      if (!nval) {
-        cmt = 1;
-      }
-    }
-    if (c == ':') {
-      if (!cmt) {
-        if (nval) {
-          appendString(&val, c);
-        } else  {
-          appendString(&json, '"');
-          appendString(&json, ':');
-          appendString(&json, ' ');
-          nval = 1;
-          skip = 1;
-        }
-      }
-    } else if (c == ' ') {
-      if (!cmt) {
-        if (!skip) {
-          if (nval) {
-            appendString(&val, ' ');
-          } else {
-            appendString(&json, ' ');
-          }
-        }
-      }
-    } else if (c == '\n') { // refresh everything
-      if (!cmt && !cmnd) {
-        if(nval) {
-          appendValue(&json, &val);
-          freeString(&val);
-          initString(&val);
-          nval = 0;
-          skip = 0;
-          nwln = 1;
-        }
-      } else {
-        cmt = 0;
-        cmnd = 1;
-      }
-    } else if (c == EOF) {
-      appendValue(&json, &val);
-      appendString(&json, '}');
-      appendString(&json, '\n');
-      eof = 1;
-    } else {
-      if (!cmt) {
-        if (nwln) {
-          appendString(&json, ',');
-          appendString(&json, '"');
-        }
-        if (nval) {
-          appendString(&val, c);
-        } else {
-          appendString(&json, c);
-        }
-        skip = 0;
-        nwln = 0;
-        cmnd = 0;
-      }
-    }
+  if (!fopt && isatty(STDIN_FILENO)) {
+      printf("No input provided.\n");
+      return 0;
   }
-  printf("%s", json.data);
-  freeString(&json);
-  freeString(&val);
+
+  getBody(&fopt, fptr, &doc); // Gather input data by lines
+  getLines(&doc); // Gather input data by lines
+  filterLines(&doc, '#'); // Remove all comment lines that start with # character
+  getEntries(&doc); // Gather lines separated by NLs into entries
+  squashEntries(&doc); // Remove all empty entries
+  consolidateEntryLineVals(&doc); // Consolidate identical values in entry lines
+  printJSON(&doc); // Output formatted JSON
+  return 0;
 }

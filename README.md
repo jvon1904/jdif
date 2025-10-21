@@ -6,7 +6,7 @@ Convert LDIF (LDAP Data Interchange Format) to JSON.
 
 To compile run `make`.
 
-To test and example run `make example`.
+To test an example run `make example`.
 
 ## Usage
 

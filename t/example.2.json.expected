@@ -1,0 +1,44 @@
+[
+  {
+    "dn": "uid=jdoe,ou=People,dc=example,dc=com",
+    "objectClass": [
+      "inetOrgPerson",
+      "organizationalPerson",
+      "person",
+      "top"
+    ],
+    "cn": [
+      "John Doe",
+      "Johnny Doe"
+    ],
+    "sn": "Doe",
+    "givenName": "John",
+    "uid": "jdoe",
+    "mail": "jdoe@example.com",
+    "telephoneNumber": "+1 555 123 4567",
+    "description": "This is a long description that wraps onto another line for clarity.",
+    "title": "Senior Engineer",
+    "employeeNumber": 123456,
+    "roomNumber": "2B/145",
+    "manager": "uid=asmith,ou=People,dc=example,dc=com",
+    "jpegPhoto": "/9j/4AAQSkZJRgABAQAAAQABAAD/2wCEAAkGBxISEhURExMVFRUXGBgYFxcYFxcYFxcYFxgXFxgYFxgYHSggGBolHRgXITEhJSkrLi4uFx8zODMsNygtLisBCgoKDg0OGxAQGzclHyUtLS0tLSstLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLf/AABEIAKgBLAMBIgACEQEDEQH/xAAcAAEAAgIDAQAAAAAAAAAAAAAABQcDBAYIAQj/xABKEAABAwIDBQQIBQgDAQgDAAABAAIRAyEEEjFBUQUTImFxgZGhsRMyQrHRI1JygpLB0dIVJFNjgpLC0uHh8TNDY3ODk6PxRFV0k+L/xAAaAQEAAwEBAQAAAAAAAAAAAAAAAQIDBAUG/8QAKhEAAgIBAwMDAwMFAAAAAAAAAAECEQMSITFBEyJRYRQygZGxkaGx0eEjQvDx8f/aAAwDAQACEQMRAD8A9oAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB//9k=",
+    "preferredLanguage": "en-US",
+    "userPassword": "e1NIcjpzYWx0ZWQ=$6$rounds=5000$abcdefghij$abcdefghijklmnopqrstuvwxy",
+    "seeAlso": "cn=Directory Manager,dc=example,dc=com",
+    "createTimestamp": "20250709013045Z",
+    "modifyTimestamp": "20250709123045Z",
+    "postalAddress": "123 Example Lane$Somewhere, ST 00000",
+    "labeledURI": "https://example.com/profile/jdoe"
+  },
+  {
+    "dn": "uid=asmith,ou=People,dc=example,dc=com",
+    "objectClass": "inetOrgPerson",
+    "cn": "Alice Smith",
+    "sn": "Smith",
+    "uid": "asmith",
+    "mail": "asmith@example.com",
+    "telephoneNumber": "+1 555 987 6543",
+    "description": "QWxpY2UgU21pdGgg4pi44pi54pi64pi7",
+    "seeAlso": "uid=jdoe,ou=People,dc=example,dc=com"
+  }
+]

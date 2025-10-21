@@ -1,5 +1,5 @@
 build:
-	clang main.c -o bin/jdif
+	clang main.c utils.c json.c -o bin/jdif
 
 binary: build
 	sudo cp bin/jdif /usr/local/bin
