@@ -57,6 +57,8 @@ char *strip(char *str);
 // String
 void initString(String *str);
 
+void prependString(String *str, char c);
+
 void appendString(String *str, char c);
 
 void assignString(String *str, const char *text);

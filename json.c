@@ -4,6 +4,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define DIGIT_MIN 48
+#define DIGIT_MAX 57
+
 
 void formatLineAsJson(Line *lin) {
   // Return early if already formatted
@@ -50,9 +53,19 @@ void formatLineAsJson(Line *lin) {
       appendString(&val, c);
     }
   }
-
   // Assign key and value to line
   assignKey(lin, &key);
+  int valIsString = 0;
+  for (int i = 0; i < val.len; i++) {
+    if (val.text[i] < DIGIT_MIN || val.text[i] > DIGIT_MAX) {
+      valIsString = 1;
+      break;
+    }
+  }
+  if (valIsString) {
+    prependString(&val, '"');
+    appendString(&val, '"');
+  }
   appendVal(lin, &val);
 
   // Cleanup temporary strings
@@ -92,7 +105,7 @@ void printJSON(Document *doc) {
             closing = ",\n";
           }
           printf(IDNT6);
-          printf("\"%s\"%s", doc->entries[i]->lines[j]->vals[k]->text, closing);
+          printf("%s%s", doc->entries[i]->lines[j]->vals[k]->text, closing);
         }
         printf(IDNT4);
         char *closing;
@@ -103,7 +116,7 @@ void printJSON(Document *doc) {
         }
         printf("%s", closing);
       } else {
-        printf("\"%s\"%s", doc->entries[i]->lines[j]->vals[0]->text, closing);
+        printf("%s%s", doc->entries[i]->lines[j]->vals[0]->text, closing);
       }
     }
 

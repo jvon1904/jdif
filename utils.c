@@ -36,6 +36,16 @@ void initString(String *str) {
   str->cap = BUFFER;
 }
 
+void prependString(String *str, char c) {
+  if (str->len + 1 >= str->cap) {
+    str->cap *= 2;
+    str->text = realloc(str->text, str->cap);
+  }
+  memmove(str->text + 1, str->text, str->len + 1);
+  str->text[0] = c;
+  str->len++;
+}
+
 void appendString(String *str, char c) {
   if (str->len + 1 >= str->cap) {
     str->cap *= 2;
