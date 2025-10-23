@@ -5,7 +5,7 @@ binary: build
 	sudo cp bin/jdif /usr/local/bin
 
 example: build
-	cat example.ldif | bin/jdif | jq
+	cat t/example.1.ldif | bin/jdif | jq
 
 test: build
 	t/test.sh
