@@ -47,37 +47,27 @@ void getLines(Document *doc) {
   Line line;
   initLine(&line);
 
-  int go = 1;
+  int nl = 0; // Newline flag
   
   for (int i = 0; i < doc->body->len; i++) {
     char c = doc->body->text[i];
     char next = doc->body->text[i + 1];
-    char nextnext;
-    if (i + 2 < doc->body->len) {
-      nextnext = doc->body->text[i + 2];
-    } else {
-      nextnext = '\0';
+
+    if (c == CR && next == SP) {
+      nl = 1;
+    }
+    
+    if (nl && (c != SP && c != CR)) {
+      nl = 0;
     }
 
-    if (c == '\\' && next == CR && nextnext == SP) {
-      go = 0;
-    } else if (c == CR && next == SP) {
-      go = 0;
-    }
-
-
-    if (go) {
+    if (!nl) {
       if (c == CR) {
         appendDocumentLine(doc, cloneLine(&line));
         freeLine(&line);
         initLine(&line);
       } else {
         appendLine(&line, c);
-      }
-    } else {
-      if (c != '\\' && c != CR && c != SP) {
-        appendLine(&line, c);
-        go = 1;
       }
     }
   }

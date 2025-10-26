@@ -12,7 +12,7 @@ givenName: John
 uid: jdoe
 mail: jdoe@example.com
 telephoneNumber: +1 555 123 4567
-description: This is a long description that \
+description: This is a long description that 
  wraps onto another line for clarity.
 title: Senior Engineer
 employeeNumber: 123456
