@@ -81,19 +81,26 @@ void getLines(Document *doc) {
 }
 
 void filterLines(Document *doc, char filtered) {
-  for (int i = 0; i < doc->llen; i++) {
-    if (doc->lines[i]->text[0] == filtered) {
-      freeLine(doc->lines[i]);
+  // Filter in place
+  // initialize write pointer
+  size_t j = 0;
 
-      for (int j = i; j < doc->llen; j++) {
-        doc->lines[j] = doc->lines[j + 1];
-      }
-
-      doc->llen--;
-      doc->lines[doc->llen] = NULL;
-      i--;
+  for (size_t i = 0; i < doc->llen; i++) {
+    Line *line = doc->lines[i];
+    if (line->text[0] == filtered) {
+      freeLine(line);
+      free(line);
+    } else {
+      doc->lines[j++] = doc->lines[i];
     }
   }
+
+  // Clean up tail
+  for (size_t i = j; i < doc->llen; i++) {
+    doc->lines[i] = NULL;
+  }
+
+  doc->llen = j;
 }
 
 void getEntries(Document *doc) {
