@@ -91,7 +91,7 @@ void filterLines(Document *doc, char filtered) {
       freeLine(line);
       free(line);
     } else {
-      doc->lines[j++] = doc->lines[i];
+      doc->lines[j++] = line;
     }
   }
 
@@ -124,19 +124,25 @@ void getEntries(Document *doc) {
 }
 
 void squashEntries(Document *doc) {
-  for (int i = 0; i < doc->elen; i++) {
-    if (doc->entries[i]->len == 0) {
-      freeEntry(doc->entries[i]);
-
-      for (int j = i; j < doc->elen; j++) {
-        doc->entries[j] = doc->entries[j + 1];
-      }
-
-      doc->elen--;
-      doc->entries[doc->elen] = NULL;
-      i--;
+  // Filter in place
+  // initialize write pointer
+  size_t j = 0;
+  for (size_t i = 0; i < doc->elen; i++) {
+    Entry *entry = doc->entries[i];
+    if (entry->len == 0) {
+      freeEntry(entry);
+      free(entry);
+    } else {
+      doc->entries[j++] = entry;
     }
   }
+
+  // Clean up tail
+  for (size_t i = j; i < doc->elen; i++) {
+    doc->entries[i] = NULL;
+  }
+
+  doc->elen = j;
 }
 
 void consolidateEntryLineVals(Document *doc) {
