@@ -1,3 +1,5 @@
+[![Github Actions badge](https://github.com/jvon1904/jdif/actions/workflows/test.yml/badge.svg)](https://github.com/jvon1904/jdif/actions/workflows/test.yml)
+
 # J-DIF
 
 Convert LDIF (LDAP Data Interchange Format) to JSON.
@@ -15,7 +17,7 @@ To test an example run `make example`.
 By default, J-DIF will read LDIF content from standard input.
 
 ```bash
-$ echo 'hello: world' | jdif 
+$ echo 'hello: world' | jdif
 {"hello": "world"}
 ```
 
@@ -31,7 +33,6 @@ $ jdif -f hello.txt
 ### Output format
 
 Currently, J-DIF ouputs JSON inline, but it can be combined with other JSON formatting and parsing libraries like `jq`.
-
 
 ```bash
 $ echo 'hello: world' | jdif | jq
