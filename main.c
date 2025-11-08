@@ -5,14 +5,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-int checkArgs(int argc, char *argv[], int *fopt, FILE **fptr) {
+int checkArgs(int argc, char *argv[], int *hopt, int *fopt, FILE **fptr) {
   if (argc > 1) {
-    // --help
-    if (!strcmp(argv[1], "--help")) {
-      printf("J-DIF -- Convert LDIF (LDAP Data Interchange Format) to JSON.\n\n");
-      printf("-f <file>\tSpecify a a file to parse.\n");
-      printf("--stdin\t\tParse from standard input.\n");
-      return 0;
+    // --help, -h
+    if (!strcmp(argv[1], "--help") || !strcmp(argv[1], "-h")) {
+      *hopt = 1;
     // --file
     } else if (!strcmp(argv[1], "-f") || !strcmp(argv[1], "--file")) {
       if (argc < 3) {
@@ -189,20 +186,33 @@ void consolidateEntryLineVals(Document *doc) {
   }
 }
 
+void printHelp() {
+  printf("J-DIF -- Convert LDIF (LDAP Data Interchange Format) to JSON.\n\n");
+  printf("-f <file>\tSpecify a a file to parse.\n");
+  printf("--stdin\t\tParse from standard input.\n");
+}
+
 int main(int argc, char *argv[]) {
+  int hopt = 0; // Help option
   int fopt = 0; // File option
   FILE *fptr = NULL; // Optional file
   Document doc;
   initDocument(&doc);
 
   // Check for command options
-  if (checkArgs(argc, argv, &fopt, &fptr)) {
+  if (checkArgs(argc, argv, &hopt, &fopt, &fptr)) {
+    return 0;
+  }
+
+  // If help option specified, exit
+  if (hopt) {
+    printHelp();
     return 0;
   }
 
   if (!fopt && isatty(STDIN_FILENO)) {
-      printf("No input provided.\n");
-      return 0;
+    printf("No input provided.\n");
+    return 0;
   }
 
   getBody(&fopt, fptr, &doc); // Gather input data by lines

@@ -16,9 +16,21 @@ function test_no_input () {
   fi
 }
 
-function test_help () {
+function test_help_long () {
   EXAMPLES=$((EXAMPLES + 1))
   bin/jdif --help > /dev/null
+  if [ "$?" = "0" ]
+  then
+    printf "\e[32m#$FUNCNAME - PASSED!\e[0m\n"
+  else
+    printf "\e[31m#$FUNCNAME - FAILED!\e[0m\n"
+    FAILURES=$((FAILURES + 1))
+  fi
+}
+
+function test_help_short () {
+  EXAMPLES=$((EXAMPLES + 1))
+  bin/jdif -h > /dev/null
   if [ "$?" = "0" ]
   then
     printf "\e[32m#$FUNCNAME - PASSED!\e[0m\n"
@@ -149,7 +161,8 @@ function test_unknown_arg () {
 }
 
 test_no_input
-test_help
+test_help_long
+test_help_short
 test_example_stdin
 test_example_stdin_2
 test_example_stdin_3
